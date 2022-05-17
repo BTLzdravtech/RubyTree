@@ -120,6 +120,9 @@ module Tree
     # @see name
     attr_accessor :content
 
+    alias :node :content
+    alias :node= :content=
+
     # @!attribute [r] parent
     # Parent of this node.  Will be +nil+ for a root node.
     attr_reader   :parent
@@ -182,6 +185,8 @@ module Tree
       end
       parentage_array
     end
+
+    alias ancestors parentage
 
     # @!attribute [r] has_children?
     # +true+ if the this node has any child node.
@@ -621,6 +626,10 @@ module Tree
       self if block_given?
     end
 
+    def descendants
+      each.drop(1)
+    end
+
     # Traverses the (sub)tree rooted at this node in pre-ordered sequence.
     # This is a synonym of {Tree::TreeNode#each}.
     #
@@ -965,5 +974,13 @@ module Tree
                           max_depth, block)
       end
     end
+
+    # def method_missing(meth, *args, &blk)
+    #   if content.respond_to?(meth)
+    #     content.send(meth, *args, &blk)
+    #   else
+    #     super
+    #   end
+    # end
   end
 end
