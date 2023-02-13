@@ -3,8 +3,8 @@
 # run_test.rb:: Run all the tests from the Ruby command line.
 #
 # Author:  Anupam Sengupta
-# Time-stamp: <2014-01-03 21:15:37 anupam>
-# Copyright (C) 2014 Anupam Sengupta <anupamsg@gmail.com>
+# Time-stamp: <2022-06-22 13:54:25 anupam>
+# Copyright (C) 2014, 2022 Anupam Sengupta <anupamsg@gmail.com>
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+# frozen_string_literal: true
 
 base_dir = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 lib_dir  = File.join(base_dir, 'lib')
@@ -41,17 +42,28 @@ $LOAD_PATH.unshift(lib_dir)
 if ENV['COVERAGE']
   begin
     require 'simplecov'
-    require 'coveralls'
+    require 'simplecov-lcov'
 
-    SimpleCov.formatter = Coveralls::SimpleCov::Formatter
+    SimpleCov::Formatter::LcovFormatter.config do |cfg|
+      cfg.report_with_single_file = true
+      cfg.lcov_file_name = 'lcov.info'
+      cfg.single_report_path = "#{base_dir}/coverage/lcov.info"
+    end
+
+    SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new(
+      [
+        SimpleCov::Formatter::HTMLFormatter,
+        SimpleCov::Formatter::LcovFormatter
+      ]
+    )
 
     SimpleCov.start do
-      add_filter '/test/'
-      add_group 'Core Classes', '/lib/.*tree.rb'
-      add_group 'Internal Utilities', '/lib/tree/utils/.*.rb'
+      add_filter '/test'
+      add_filter '/spec'
+      enable_coverage :branch
     end
   rescue LoadError => e
-    puts 'Could not load simplecov; continuing without code coverage' + e.cause
+    puts "Could not load simplecov; continuing without code coverage #{e.cause}"
   end
 end
 

@@ -2,7 +2,7 @@
 #
 # Rakefile - This file is part of the RubyTree package.
 #
-# Copyright (c) 2006-2021  Anupam Sengupta
+# Copyright (c) 2006-2022  Anupam Sengupta
 #
 # All rights reserved.
 #
@@ -31,9 +31,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+#
+# frozen_string_literal: true
 
 require 'rubygems'
-GEM_SPEC = eval(File.read('./rubytree.gemspec')) # Load the gemspec.
+
+# @todo: Check if Bundler needs to be `require`d.
+GEM_SPEC = Bundler.load_gemspec(File.join(__dir__, 'rubytree.gemspec'))
 
 PKG_NAME = GEM_SPEC.name
 PKG_VER  = GEM_SPEC.version
@@ -55,6 +59,7 @@ task :version do
 end
 
 require 'rake/clean'
+desc 'Remove all generated files.'
 task clean: 'gem:clobber_package'
 CLEAN.include('coverage')
 task clobber: [:clean, 'doc:clobber_rdoc', 'doc:clobber_yard']
@@ -70,8 +75,8 @@ namespace :doc do # ................................ Documentation
     require 'rdoc/task'
     Rake::RDocTask.new do |rdoc|
       rdoc.rdoc_dir = 'rdoc'
-      rdoc.title    = "#{PKG_NAME}-#{PKG_VER}"
-      rdoc.main     = 'README.rdoc'
+      rdoc.title    = "RubyTree Documenation: #{PKG_NAME}-#{PKG_VER}"
+      rdoc.main     = 'README.md'
       rdoc.rdoc_files.include(GEM_SPEC.extra_rdoc_files)
       rdoc.rdoc_files.include('./lib/**/*.rb')
     end
@@ -95,15 +100,31 @@ namespace :doc do # ................................ Documentation
   end
 end
 
-desc 'Run the test cases'
-task test: 'test:unit'
+desc 'Run the unit tests'
+task test: %w[test:unit]
 
-namespace :test do # ................................ Test related
+# ................................ Test related
+namespace :test do
+  desc 'Run all the tests'
+  task all: %w[test:unit test:spec test:examples]
+
   require 'rake/testtask'
   Rake::TestTask.new(:unit) do |test|
     test.libs << 'lib' << 'test'
     test.pattern = 'test/**/test_*.rb'
     test.verbose = false
+  end
+
+  # ................................ rspec tests
+  begin
+    require 'rspec/core/rake_task'
+
+    RSpec::Core::RakeTask.new(:spec) do |t|
+      t.fail_on_error = false
+      t.rspec_opts = ['--color', '--format doc']
+    end
+  rescue LoadError
+    # Cannot load rspec.
   end
 
   desc 'Run the examples'
@@ -118,32 +139,10 @@ namespace :test do # ................................ Test related
   task :coverage do
     ruby 'test/run_test.rb'
   end
-
-  begin
-    require 'rcov/rcovtask'
-    Rcov::RcovTask.new(:rcov) do |t|
-      t.libs << 'test'
-      t.test_files = FileList['test/**/test_*.rb']
-      t.verbose = true
-      t.rcov_opts << '--exclude /gems/,/Library/,/usr/,spec,lib/tasks'
-    end
-  rescue LoadError
-    # Oh well. Can't have everything.
-  end
 end
 
-begin # ................................ rspec tests
-  require 'rspec/core/rake_task'
-
-  RSpec::Core::RakeTask.new(:spec) do |t|
-    t.fail_on_error = false
-    t.rspec_opts = ['--color', '--format doc']
-  end
-rescue LoadError
-  # Cannot load rspec.
-end
-
-namespace :tag do # ................................ Emacs Tags
+# ................................ Emacs Tags
+namespace :tag do
   require 'rtagstask'
   RTagsTask.new(:tags) do |rd|
     rd.vi = false
@@ -153,7 +152,8 @@ rescue LoadError
   # Oh well. Can't have everything.
 end
 
-namespace :gem do               # ................................ Gem related
+# ................................ Gem related
+namespace :gem do
   require 'rubygems/package_task'
   Gem::PackageTask.new(GEM_SPEC) do |pkg|
     pkg.need_zip = true
@@ -164,4 +164,13 @@ namespace :gem do               # ................................ Gem related
   task push: :gem do
     sh "gem push pkg/#{GEM_NAME}"
   end
+end
+
+# ................................ Ruby linting
+require 'rubocop/rake_task'
+
+RuboCop::RakeTask.new(:rubocop) do |t|
+  t.options = ['--display-cop-names']
+  t.requires << 'rubocop-rake'
+  t.requires << 'rubocop-rspec'
 end
