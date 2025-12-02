@@ -118,7 +118,7 @@ This example can also be found at
 
 ## REQUIREMENTS: ##
 
-* [Ruby][] 2.6.x and above.
+* [Ruby][] 2.7.x and above.
 
 
 * Run-time Dependencies:
@@ -231,6 +231,9 @@ A big thanks to the following contributors for helping improve **RubyTree**:
     specialized tree nodes (sub-classes of `Tree::TreeNode`).
 13. [Jakub Pavlik](https://github.com/igneus) for fixing the creation of
     detached copies of unclonable objects such as `:symbol`, `true|false`, etc.
+14. [bghalami-rc](https://github.com/bghalami-rc) for updating the guard clause
+    in the `from_hash` method.
+
 
 ## LICENSE: ##
 
